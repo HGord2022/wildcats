@@ -3,6 +3,10 @@ import numpy as np
 import pyarrow
 import os
 
+"""
+This script is called by the "merge_submitter.sh" job submitter for the UoB HPC. All the pickled simulation outputs are concatenated
+into a pandas dataframe which is exported to csv in the "./output/" directory.
+"""
 df_list = []
 df2_list = []
 df3_list = []
