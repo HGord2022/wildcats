@@ -28,7 +28,9 @@ class WildcatModel:
         decap_trees_filename: str = "decap.trees",
         add_seed_suffix: bool = True,
         ):
-        """Wildcat model object. Recommended that the directory "../output/" is set up so
+        """
+        
+        Wildcat model object. Recommended that the directory "../output/" is set up so
         the default output paths work.
 
         Args:
