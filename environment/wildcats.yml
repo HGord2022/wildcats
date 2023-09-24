@@ -1,4 +1,4 @@
-name: bp1_envA
+name: wildcats
 channels:
   - conda-forge
   - defaults
