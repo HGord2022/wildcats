@@ -7,6 +7,10 @@ import os
 import pickle
 import time
 
+'''
+This script is called by the "run_sim_round1.sh" HPC job script. It initiates a simulation based on 
+parameters sampled randomly from the prior. 
+'''
 
 print("### Simulation starting ###")
 
@@ -20,7 +24,6 @@ for key, prior in priors.items():
 prior_dict = dict(zip(priors.keys(),samples))
 thetas = pd.DataFrame(prior_dict, index=['i', ])
 array_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
-filename = "./output/thetas/theta%s.pickle" % array_id
 
 print(prior_dict)
 
@@ -44,8 +47,13 @@ data, time =  model.simulate(
         n_samples=[6, 65, 22, 15, 4],
         seed=rand)
 
+# 'n_samples' must be changed to reflect the dataset
+
+# calculate summary stats (saves file directly)
 summary_stats(data)
 
+# save the parameter set and time taken for simulation to pickle files to be merged
+filename = "./output/thetas/theta%s.pickle" % array_id
 
 with open(filename, 'wb') as handle:
     pickle.dump(thetas, handle, protocol=pickle.DEFAULT_PROTOCOL)
