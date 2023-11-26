@@ -8,10 +8,16 @@ import os
 import pickle
 import time
 
+'''
+This script is called by the "run_sim_sequential.sh" HPC job script. It initiates a simulation based on 
+parameters sampled from the previous round's posterior distribution (params_rn.csv).
+'''
+
 print("### Simulation starting ###")
 rand = random.randint(1,999999)
 array_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
 
+# load params sampled from posterior and select new row
 df = pd.read_csv("params_r3.csv")
 params = list(df.iloc[array_id])
 
@@ -43,6 +49,7 @@ data, time =  model.simulate(
 
 summary_stats(data)
 
+# save parameter set and time taken for simulation
 
 with open(filename, 'wb') as handle:
     pickle.dump(thetas, handle, protocol=pickle.DEFAULT_PROTOCOL)
