@@ -6,7 +6,6 @@ import scipy.stats
 import matplotlib.pyplot as plt
 import pickle
 import pandas as pd
-#from sim.utils import check_params
 
 priors = {
     "captive_time": scipy.stats.lognorm(s=0.4, loc=1, scale=np.exp(2.7)),
