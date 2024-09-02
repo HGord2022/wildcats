@@ -20,8 +20,13 @@ dependencies:
   - ipython
   - mpich
   - tskit
-  - torch
-  - sbi
   - git
+  - pip
+  - jax
+  - equinox
+  - json
+  - pickle
+  - pip:
+    - flowjax 
 
 
