@@ -18,7 +18,7 @@ rand = random.randint(1,999999)
 array_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
 
 # load params sampled from posterior and select new row
-df = pd.read_csv("params_r3.csv")
+df = pd.read_csv("params_r2.csv")
 params = list(df.iloc[array_id])
 
 prior_dict = dict(zip(priors.keys(),params))
