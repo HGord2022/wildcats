@@ -95,8 +95,17 @@ to_drop = [#correlation >0.99
     # outlier noise model method r2 (>0.8)
     'relatedness_captive_lyb',
     'pc1_median_eu',
-    'pc2_dist_domestic_lyb']
+    'pc2_dist_domestic_lyb',
     # drop_one algorithm
+    'pc2_iqr_eu',
+    'relatedness_domestic_eu',
+    'tajimas_d_lyb',
+    'pc1_dist_captive_eu',
+    'fst_scot_lyb',
+    'pc2_iqr_scot',
+    'pc1_dist_scot_lyb',
+    'pc1_dist_eu_lyb']
+
 
 combined_x = pd.concat([x, x_o], ignore_index=True)
 combined_x = combined_x.drop(columns=to_drop)
@@ -141,16 +150,12 @@ fitted_flow, losses_r = fit_to_data(
     dist=flow,
     x=x_t,
     optimizer = optimizer,
-    max_epochs=1500,
+    max_epochs=2000,
     show_progress=True,
-    max_patience=20,
-    batch_size=50
+    max_patience=30,
+    batch_size=25
 )
 
-for k, v in losses_r.items():
-    plt.plot(v, label=k)
-plt.legend()
-plt.savefig("./figs/losses.png")
 
 # log prob of observation
 print("calculating log prob of observed")
@@ -186,3 +191,9 @@ filename = "./hdr/hdr%s.pickle" % array_id
 
 with open(filename, 'wb') as handle:
     pickle.dump(final_array, handle, protocol=pickle.DEFAULT_PROTOCOL)
+
+for k, v in losses_r.items():
+    plt.plot(v, label=k)
+plt.legend()
+filename = "./figs/losses%s.png" % array_id
+plt.savefig(filename)
