@@ -96,7 +96,7 @@ to_drop = [#correlation >0.99
     'relatedness_captive_lyb',
     'pc1_median_eu',
     'pc2_dist_domestic_lyb',
-    # drop_one algorithm
+    # drop_one algorithm, achieved 0.7788 hdr
     'pc2_iqr_eu',
     'relatedness_domestic_eu',
     'tajimas_d_lyb',
