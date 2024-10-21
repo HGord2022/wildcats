@@ -1,19 +1,15 @@
 from flowjax.train.data_fit import fit_to_data
-from flowjax.train.losses import ContrastiveLoss
 from flowjax.flows import masked_autoregressive_flow as MaskedAutoregressiveFlow
 from flowjax.distributions import Normal
 import flowjax.bijections as bij
 import jax.numpy as jnp
 import jax.random as jr
-import equinox as eqx
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from jax import vmap
 import pandas as pd
-import json
 import pickle
-import csv
 import os
 
 
@@ -143,6 +139,7 @@ optimizer = optax.chain(
         optax.clip_by_global_norm(1),
         optax.adam(5e-5),
     )
+
 
 print("fitting flow")
 fitted_flow, losses_r = fit_to_data(
