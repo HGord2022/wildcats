@@ -79,3 +79,12 @@ def thinning(ts, window):
             batch = []
     return list(set(range(0,ts.num_sites))-set(ids))
 
+
+def check_priors(prior_dict):
+    
+    if (prior_dict["div_time_scot"] > prior_dict["captive_time"] and
+    prior_dict["div_time"] > prior_dict["div_time_scot"] and
+    prior_dict["div_time"] > prior_dict["div_time_dom"]):
+        return True
+    else:
+        return False
