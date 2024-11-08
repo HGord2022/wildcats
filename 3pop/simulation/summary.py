@@ -10,6 +10,7 @@ from statistics import mean
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from scipy.stats import iqr
+from scipy.spatial import procrustes
 
 def summary_stats(ts):
     """
@@ -114,7 +115,14 @@ def summary_stats(ts):
 
     principalComponents = pca.fit_transform(X=standardizedData)
 
-    pca_df = pd.DataFrame(principalComponents, columns=['pc1', 'pc2'])
+    ob_pca = pd.read_pickle("./map_simulation/obs_pca.pickle")
+
+    mtx1, mtx2, disparity = procrustes(ob_pca, principalComponents)
+
+    pca_df = pd.DataFrame(mtx2, columns=['pc1', 'pc2', 'pc3'])
+    pca_df = pca_df.drop(columns=["pc3"])
+
+    
     pops = ["domestic"] * 6 + ["scot"] * 65 + ["captive"] * 22
     pca_df["pop"] = pops
 
