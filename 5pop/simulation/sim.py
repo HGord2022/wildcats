@@ -1,7 +1,4 @@
-import msprime
-import tskit
 import numpy as np
-import pyslim
 import subprocess
 import os
 from collections import namedtuple
@@ -16,11 +13,11 @@ from priors import priors
 import scipy.stats
 import time
 import utils
+import tskit
+import msprime
+import pyslim
+import math
 
-'''
-This script is adapted from Dan Ward's wildcat inference method. It has been expanded to include 2
-more populations.
-'''
 
 class WildcatModel:
 
@@ -32,9 +29,7 @@ class WildcatModel:
         decap_trees_filename: str = "decap.trees",
         add_seed_suffix: bool = True,
         ):
-        """
-        
-        Wildcat model object. Recommended that the directory "../output/" is set up so
+        """Wildcat model object. Recommended that the directory "../output/" is set up so
         the default output paths work.
 
         Args:
@@ -75,21 +70,18 @@ class WildcatModel:
 
         Args:
             captive_time (int): Time captive population introduced (generations from present).
-            div_time (int): Sylvestris-Lybica divergence time (generations from present).
-            div_time_dom (int): Domestic-Lybica divergence time (generations from present).
-            div_time_scot (int): Scottish-European Sylvestris divergence time (generations from present)
-            mig_length_scot (int): Length of domestic to wild-living wildcat population migration (generations from present).
-            mig_rate_scot (float): Rate of migration domestic -> wild-living scottish.
-            mig_rate_captive (float): Rate of migration of scottish wildcats into captive wildcat population.
+            div_time1 (int): Sylvestris-Lybica divergence time (generations from present).
+            mig_length_post_split (int): Generations of symetric migration after Sylvestic-Lybica divergence.
+            mig_rate_post_split (float): Strength of symetric migration after Sylvestic-Lybica divergence.
+            mig_length_wild (int): Length of domestic to wild-living wildcat population migration (generations from present).
+            mig_rate_wild (float): Rate of migration domestic -> wild-living.
+            mig_rate_captive (float): Rate of migration of wildcats into captive wildcat population.
             pop_size_captive (int): Captive population size.
             pop_size_domestic_1 (int): Domestic population size (initially used in slim).
-            pop_size_scot_1 (int): Wild-living scottish wildcat population size (initially used in slim).
-            pop_size_eu_1 (int): European wildcat population size.
-            pop_size_eu_2 (int): European wildcat population size pre scottish divergence
-            pop_size_lyb_1 (int): African Wildcat population size
-            pop_size_lyb_2 (int): African Wildcat population size pre domestication.
-            n_samples (list, optional): Number of samples from each population (domestic, scot, captive, european, lybica). 
-            Defaults to [30, 30, 30, 30, 30].
+            pop_size_domestic_2 (int): Domestic population size pre-bottleneck.
+            pop_size_wild_1 (int): Wild-living wildcat population size (initially used in slim).
+            pop_size_wild_2 (int): Wild-living wildcat size pre-bottleneck.
+            n_samples (list, optional): Number of samples from each population (domestic, wildcat, captive). Defaults to [5, 30, 10].
             seed (int, optional): Random seed. Defaults to None.
         """
 
@@ -135,10 +127,14 @@ class WildcatModel:
 
         # simplify tree sequence
         tree_seq = tree_seq.simplify(samples=samples)
-
+        
         # apply minor allele count filter to match real genome data
         tree_seq = tree_seq.delete_sites(utils.mac_filter(tree_seq, count=3))
-
+        
+        #remove sites to match missingness of real data
+        n_sites = tree_seq.num_sites
+        tree_seq = tree_seq.delete_sites(random.sample(range(0,n_sites),math.floor(n_sites//3.86)))
+        
         # apply thinning to match real genome data
         #tree_seq = tree_seq.delete_sites(utils.thinning(tree_seq, window=2000))
 
