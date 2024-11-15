@@ -7,13 +7,9 @@ import os
 from collections import namedtuple
 import logging
 import shlex
-import pandas as pd
-import random
 import re
-import pickle
 from tabulate import tabulate
 from priors import priors
-import scipy.stats
 import time
 import utils
 
@@ -102,13 +98,11 @@ class WildcatModel:
         # Run simulation
         command = self.slim_command(
             pop_size_domestic_1=int(pop_size_domestic_1),
-            pop_size_scot_1=int(pop_size_scot_1),
-            pop_size_eu_1=int(pop_size_eu_1),
-            pop_size_lyb_1=int(pop_size_lyb_1),
+            pop_size_wild_1=int(pop_size_wild_1),
             pop_size_captive=int(pop_size_captive),
             mig_rate_captive=mig_rate_captive,
-            mig_length_scot=int(mig_length_scot),
-            mig_rate_scot=mig_rate_scot,
+            mig_length_wild=int(mig_length_wild),
+            mig_rate_wild=mig_rate_wild,
             captive_time=int(captive_time),
             seed=seed
         )
@@ -118,15 +112,17 @@ class WildcatModel:
 
         demography = self.get_demography(
             pop_size_domestic_1=int(pop_size_domestic_1),
-            pop_size_scot_1=int(pop_size_scot_1),
-            pop_size_eu_1=int(pop_size_eu_1),
-            pop_size_lyb_1=int(pop_size_lyb_1),
+            pop_size_wild_1=int(pop_size_wild_1),
             pop_size_captive=int(pop_size_captive),
-            pop_size_lyb_2=int(pop_size_lyb_2),
-            pop_size_eu_2=int(pop_size_eu_2),
+            pop_size_domestic_2=int(pop_size_domestic_2),
+            pop_size_wild_2=int(pop_size_wild_2),
             div_time=int(div_time),
-            div_time_dom=int(div_time_dom),
-            div_time_scot=int(div_time_scot),
+            mig_rate_post_split=mig_rate_post_split,
+            mig_length_post_split=int(mig_length_post_split),
+            bottleneck_time_wild=int(bottleneck_time_wild),
+            bottleneck_strength_wild=bottleneck_strength_wild,
+            bottleneck_time_domestic=int(bottleneck_time_domestic),
+            bottleneck_strength_domestic=bottleneck_strength_domestic
         )
 
         tree_seq = self.recapitate(tree_seq, demography, seed)
@@ -153,13 +149,11 @@ class WildcatModel:
     def slim_command(
         self,
         pop_size_domestic_1,
-        pop_size_lyb_1,
-        pop_size_eu_1,
-        pop_size_scot_1,
+        pop_size_wild_1,
         pop_size_captive,
         mig_rate_captive,
-        mig_length_scot,
-        mig_rate_scot,
+        mig_length_wild,
+        mig_rate_wild,
         captive_time,
         seed,
         slim_script_filename='slim_model.slim',
@@ -168,13 +162,11 @@ class WildcatModel:
 
         param_dict = {
             "pop_size_domestic_1": pop_size_domestic_1,
-            "pop_size_eu_1": pop_size_eu_1,
-            "pop_size_scot_1": pop_size_scot_1,
-            "pop_size_lyb_1": pop_size_lyb_1,
+            "pop_size_wild_1": pop_size_wild_1,
             "pop_size_captive": pop_size_captive,
             "mig_rate_captive": mig_rate_captive,
-            "mig_length_scot": mig_length_scot,
-            "mig_rate_scot": mig_rate_scot,
+            "mig_length_wild": mig_length_wild,
+            "mig_rate_wild": mig_rate_wild,
             "captive_time": captive_time,
             "length": self.seq_length,
             "recombination_rate": self.recombination_rate
@@ -215,34 +207,43 @@ class WildcatModel:
 
     @staticmethod
     def get_demography(
-        pop_size_domestic_1, pop_size_eu_1, pop_size_lyb_1, pop_size_scot_1, pop_size_captive, pop_size_eu_2,
-        pop_size_lyb_2, div_time, div_time_scot, div_time_dom):
+        pop_size_domestic_1, pop_size_wild_1, pop_size_captive, pop_size_domestic_2, pop_size_wild_2,
+        div_time, mig_rate_post_split, mig_length_post_split, bottleneck_time_wild,
+        bottleneck_strength_wild, bottleneck_time_domestic, bottleneck_strength_domestic):
         """Model for recapitation, including bottlenecks, population size changes and migration.
         Returns list of demographic events sorted in time order. Note that if parameters are drawn from priors this
         could have unexpected consequences on the demography. sim.utils.check_params() should mitigate this issue."""
 
+        migration_time_2 = div_time-mig_length_post_split
 
-        domestic, scot, captive, eu, lyb = "p0", "p1", "p2", "p3", "p4"  # Names match slim for recapitation
+        domestic, wild, captive = "p0", "p1", "p2"  # Names match slim for recapitation
 
-        ## THESE MUST BE ADDED IN ORDER AS THEY ARE IN THE ABOVE LIST
         demography = msprime.Demography()
         demography.add_population(name=domestic, initial_size=pop_size_domestic_1)
-        demography.add_population(name=scot, initial_size=pop_size_scot_1)
+        demography.add_population(name=wild, initial_size=pop_size_wild_1)
         demography.add_population(name=captive, initial_size=pop_size_captive, initially_active=False)
-        demography.add_population(name=eu, initial_size=pop_size_eu_1)
-        demography.add_population(name=lyb, initial_size=pop_size_lyb_1)
-        demography.add_population(name="lyb2", initial_size=pop_size_lyb_2, initially_active=False)
-        demography.add_population(name="eu2", initial_size=pop_size_eu_2, initially_active=False)
-        demography.add_population(name="mrca", initial_size=pop_size_eu_2, initially_active=False)
+        demography.add_population(name="mrca", initial_size=pop_size_domestic_2+pop_size_wild_2, initially_active=False)
 
-        demography.add_population_split(time=div_time_dom, derived=[domestic, lyb], ancestral="lyb2")
+        demography.add_population_parameters_change(
+            time=bottleneck_time_domestic, initial_size=pop_size_domestic_2, population=domestic
+        )
+        demography.add_instantaneous_bottleneck(
+            time=bottleneck_time_domestic, strength=bottleneck_strength_domestic, population=domestic
+        )
 
-        demography.add_population_split(time=div_time_scot, derived=[eu, scot], ancestral="eu2")
+        demography.add_population_parameters_change(
+            time=bottleneck_time_wild, initial_size=pop_size_wild_2, population=wild
+        )
 
-        demography.add_population_split(time=div_time, derived=["lyb2", "eu2"], ancestral="mrca")
+        demography.add_instantaneous_bottleneck(
+            time=bottleneck_time_wild, strength=bottleneck_strength_wild, population=wild
+        )
 
-        demography.sort_events()
+        demography.add_symmetric_migration_rate_change(
+            time=migration_time_2, populations=[domestic, wild], rate=mig_rate_post_split
+        )
 
+        demography.add_population_split(time=div_time, derived=[domestic, wild], ancestral="mrca")
         return demography
 
     def recapitate(self, decap_trees, demography, seed: int, demography_debugger=False):
@@ -293,7 +294,7 @@ class WildcatModel:
         pop = np.array([tree_seq.individual(i).population for i in pyslim.individuals_alive_at(tree_seq, 0)])
         np.random.seed(seed)
         samples = []
-        for pop_num in range(5):
+        for pop_num in range(3):
             sampled_inds = np.random.choice(
                 np.where(pop == pop_num)[0], replace=False, size=sample_sizes[pop_num]
                 )

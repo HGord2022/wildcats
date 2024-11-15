@@ -10,7 +10,7 @@ import time
 
 '''
 This script is called by the "run_sim_sequential.sh" HPC job script. It initiates a simulation based on 
-parameters sampled from the previous round's posterior distribution (params_rn.csv).
+parameters sampled from the previous round's posterior distribution ("params_rn.csv").
 '''
 
 print("### Simulation starting ###")
@@ -18,7 +18,7 @@ rand = random.randint(1,999999)
 array_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
 
 # load params sampled from posterior and select new row
-df = pd.read_csv("params_r2.csv")
+df = pd.read_csv("tr2.csv")
 params = list(df.iloc[array_id])
 
 prior_dict = dict(zip(priors.keys(),params))
@@ -27,7 +27,7 @@ filename = "./output/thetas/theta%s.pickle" % array_id
 
 print(prior_dict)
 
-model = WildcatModel(seq_length=int(45e6), recombination_rate=prior_dict["recombination_rate"], mutation_rate=prior_dict["mutation_rate"])
+model = WildcatModel(seq_length=int(44648254), recombination_rate=prior_dict["recombination_rate"], mutation_rate=prior_dict["mutation_rate"])
 
 data, time =  model.simulate(
         captive_time=prior_dict["captive_time"],
@@ -44,7 +44,7 @@ data, time =  model.simulate(
         pop_size_scot_1=prior_dict["pop_size_scot_1"],
         pop_size_eu_1=prior_dict["pop_size_eu_1"],
         pop_size_eu_2=prior_dict["pop_size_eu_2"],
-        n_samples=[6, 65, 22, 15, 4],
+        n_samples=[6, 63, 22, 15, 4],
         seed=rand)
 
 summary_stats(data)

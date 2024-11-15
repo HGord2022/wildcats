@@ -27,7 +27,7 @@ array_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
 
 print(prior_dict)
 
-model = WildcatModel(seq_length=int(45e6), recombination_rate=prior_dict["recombination_rate"], mutation_rate=prior_dict["mutation_rate"])
+model = WildcatModel(seq_length=int(44648254), recombination_rate=prior_dict["recombination_rate"], mutation_rate=prior_dict["mutation_rate"])
 
 data, time =  model.simulate(
         captive_time=prior_dict["captive_time"],
@@ -44,7 +44,7 @@ data, time =  model.simulate(
         pop_size_scot_1=prior_dict["pop_size_scot_1"],
         pop_size_eu_1=prior_dict["pop_size_eu_1"],
         pop_size_eu_2=prior_dict["pop_size_eu_2"],
-        n_samples=[6, 65, 22, 15, 4],
+        n_samples=[6, 63, 22, 15, 4],
         seed=rand)
 
 # 'n_samples' must be changed to reflect the dataset

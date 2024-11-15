@@ -18,7 +18,7 @@ rand = random.randint(1,999999)
 array_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
 
 # load params sampled from posterior and select new row
-df = pd.read_csv("params_r2.csv")
+df = pd.read_csv("tr2.csv")
 params = list(df.iloc[array_id])
 
 prior_dict = dict(zip(priors.keys(),params))
@@ -46,7 +46,7 @@ data, time =  model.simulate(
         pop_size_domestic_2 = prior_dict["pop_size_domestic_2"],
         pop_size_wild_1 = prior_dict["pop_size_wild_1"],
         pop_size_wild_2 = prior_dict["pop_size_wild_2"],
-        n_samples=[6, 65, 22], # 6 domestic, 65 wild, 22 captive
+        n_samples=[6, 63, 22], # 6 domestic, 63 wild, 22 captive
         seed=rand)
 
 summary_stats(data)
