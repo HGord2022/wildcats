@@ -3,3 +3,11 @@
 
 ### https://github.com/danielward27/wildcats
 ### https://github.com/JJMorton/wildcats
+
+3 pop data:
+91 individuals
+After filtering missingness, kept 571717 out of a possible 1329108 Sites
+
+5 pop data:
+110 individuals
+After filtering missingness, kept 416955 out of a possible 1329108 Sites
