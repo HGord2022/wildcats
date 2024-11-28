@@ -5,7 +5,7 @@ import builtins
 import sys
 import tskit
 from tskit import MISSING_DATA
-from samples_dict_2 import samples_dict
+from samples_dict import samples_dict
 
 def add_diploid_sites(vcf, samples):
     """
@@ -51,7 +51,7 @@ def chromosome_length(vcf):
     return vcf.seqlens[0]
 
 
-vcf_location = "./observed_01_nomiss.vcf.gz"
+vcf_location = "./3pop.vcf.gz"
 # NB: could also read from an online version by setting vcf_location to ./2022_BATCH2_E3.vcf.gz
 # "https://github.com/tskit-dev/tsinfer/raw/main/docs/_static/P_dom_chr24_phased.vcf.gz"
 

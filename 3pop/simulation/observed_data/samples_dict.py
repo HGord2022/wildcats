@@ -90,6 +90,5 @@ samples_dict = {
  'WCQ0613': 'scot',
  'WCQ0903': 'scot',
  'WCQ0904': 'scot',
- 'WCQ0915': 'scot',
- 'WCQ1452': 'captive'
+ 'WCQ0915': 'scot'
  }

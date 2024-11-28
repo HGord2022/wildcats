@@ -38,7 +38,6 @@ def summary_stats(ts):
         "f2": {},
         "f3": {},
         "f4": {},
-        "y1": {},
         "y2": {},
         "y3": {},
         "pc1_median":{},
@@ -54,7 +53,6 @@ def summary_stats(ts):
         stats["diversity"][pop_name] = ts.diversity(sample_sets=ts.samples(population=pop_num))
         stats["segregating_sites"][pop_name] = ts.segregating_sites(sample_sets=ts.samples(population=pop_num))
         stats["tajimas_d"][pop_name] = ts.Tajimas_D(sample_sets=ts.samples(population=pop_num))
-        stats["y1"][pop_name] = ts.Y1(sample_sets=ts.samples(population=pop_num))
 
     # Two way statistics
     for comparison in ["domestic_scot", "domestic_captive", "domestic_eu", "domestic_lyb",

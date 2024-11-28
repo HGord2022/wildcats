@@ -13,10 +13,56 @@ from priors import priors
 import time
 import utils
 
-'''
-This script is adapted from Dan Ward's wildcat inference method. It has been expanded to include 2
-more populations.
-'''
+"""
+This script defines a simulation model for wildcat populations using the msprime, tskit, and pyslim libraries. 
+It includes a class `WildcatModel` that encapsulates the simulation logic and several helper functions.
+
+Classes:
+    WildcatModel: 
+        A class to simulate wildcat populations with various demographic events and parameters.
+    GenotypeData: 
+        A class to collate results from the simulation or real data for analysis with scikit-allel.
+
+Functions:
+    add_seed_suffix_to_file(filename, seed):
+        Adds a suffix with the random seed to a filename to avoid clashes.
+    tree_summary(tree_seq):
+        Prints a summary of a tree sequence including the number of trees, coalesced trees, tree heights, 
+        number of alive individuals, samples, populations, variants, and sequence length.
+    get_sampled_nodes(tree_seq):
+        Finds the sampled nodes from a simplified tree sequence and returns a namedtuple with the nodes 
+        for each population.
+
+Methods in WildcatModel:
+    __init__(self, seq_length, recombination_rate, mutation_rate, decap_trees_filename="decap.trees", add_seed_suffix=True):
+        Initializes the WildcatModel with the given parameters.
+    simulate(self, bottleneck_strength_domestic, bottleneck_strength_wild, bottleneck_time_domestic, bottleneck_time_wild, 
+             captive_time, div_time, mig_length_post_split, mig_rate_post_split, mig_length_wild, mig_rate_wild, 
+             mig_rate_captive, pop_size_captive, pop_size_domestic_1, pop_size_domestic_2, pop_size_wild_1, 
+             pop_size_wild_2, n_samples=[30, 30, 30], seed=None):
+        Runs the simulation with the specified parameters and returns the tree sequence and time taken.
+    slim_command(self, pop_size_domestic_1, pop_size_wild_1, pop_size_captive, mig_rate_captive, mig_length_wild, 
+                 mig_rate_wild, captive_time, seed, slim_script_filename='slim_model.slim', add_seed_suffix=True):
+        Constructs the command to run the SLiM simulation with the given parameters.
+    run_slim(self, command):
+        Runs the SLiM simulation from the command line and returns the decapitated tree sequence.
+    get_demography(pop_size_domestic_1, pop_size_wild_1, pop_size_captive, pop_size_domestic_2, pop_size_wild_2, 
+                   div_time, mig_rate_post_split, mig_length_post_split, bottleneck_time_wild, bottleneck_strength_wild, 
+                   bottleneck_time_domestic, bottleneck_strength_domestic):
+        Defines the demography model for recapitation, including bottlenecks, population size changes, and migration.
+    recapitate(self, decap_trees, demography, seed, demography_debugger=False):
+        Recapitates the tree sequence under the specified demography model, adds mutations, and returns the tree sequence.
+    sample_nodes(self, tree_seq, sample_sizes, seed, concatenate=True):
+        Samples nodes of individuals from the extant populations for simplification.
+
+Methods in GenotypeData:
+    __init__(self, tree_seq=None, callset=None, subpops=None, seq_length=None):
+        Initializes the GenotypeData object with either a tree sequence or a callset.
+    _initialize_from_tree_seq(self, tree_seq):
+        Initializes the GenotypeData object from a tree sequence.
+    _initialize_from_callset(self, callset):
+        Initializes the GenotypeData object from a callset.
+"""
 
 class WildcatModel:
 
