@@ -42,7 +42,7 @@ def add_populations(vcf, samples):
 
 
 def add_diploid_individuals(vcf, samples, populations):
-    for name, population in samples_dict.items():
+    for name, population in zip(vcf.samples, populations):
         samples.add_individual(ploidy=2, metadata={"name": name}, population=population)
     print("individuals added")
 
@@ -56,12 +56,14 @@ vcf_location = "./3pop.vcf.gz"
 # "https://github.com/tskit-dev/tsinfer/raw/main/docs/_static/P_dom_chr24_phased.vcf.gz"
 
 vcf = cyvcf2.VCF(vcf_location)
-
-#print("Chromosome length: ", chromosome_length(vcf))
+print("VCF file loaded")
+#print("Chromosome length: ", chromosome_length(vcf)) - does not work for 3pop.vcf.gz 44648254
 with tsinfer.SampleData(
-    path="E3.samples", sequence_length=44648254
+    path="E3.samples", sequence_length=45000000
 ) as samples:
     populations = add_populations(vcf, samples)
+    print(populations)
+    print("Type of populations:", type(populations[1]))
     add_diploid_individuals(vcf, samples, populations)
     add_diploid_sites(vcf, samples)
 
