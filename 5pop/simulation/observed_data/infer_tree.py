@@ -44,7 +44,7 @@ def add_populations(vcf, samples):
 
 
 def add_diploid_individuals(vcf, samples, populations):
-    for name, population in samples_dict.items():
+    for name, population in zip(vcf.samples, populations):
         samples.add_individual(ploidy=2, metadata={"name": name}, population=population)
     print("individuals added")
 
@@ -61,7 +61,7 @@ vcf = cyvcf2.VCF(vcf_location)
 
 #print("Chromosome length: ", chromosome_length(vcf))
 with tsinfer.SampleData(
-    path="E3.samples", sequence_length=44648254
+    path="E3.samples", sequence_length=45000000
 ) as samples:
     populations = add_populations(vcf, samples)
     add_diploid_individuals(vcf, samples, populations)
