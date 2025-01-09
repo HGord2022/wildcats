@@ -6,10 +6,6 @@ import pandas as pd
 import numpy as np
 import msprime
 from pyarrow.lib import ArrowIOError
-import scipy
-import matplotlib.pyplot as plt
-import seaborn as sns
-import logging
 import tskit
 import random
 

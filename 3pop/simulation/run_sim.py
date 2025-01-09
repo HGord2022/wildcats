@@ -27,10 +27,10 @@ array_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
 
 print(prior_dict)
 
-model = WildcatModel(seq_length=int(44648254), recombination_rate=prior_dict["recombination_rate"], mutation_rate=prior_dict["mutation_rate"])
+model = WildcatModel(seq_length=int(44648254), recombination_rate=1.8e-8, mutation_rate= 0.86e-8)
 
 data, time =  model.simulate(
-        bottleneck_strength_domestic = prior_dict["bottleneck_strength_domestic"]
+        bottleneck_strength_domestic = prior_dict["bottleneck_strength_domestic"],
         bottleneck_strength_wild = prior_dict["bottleneck_strength_wild"],
         bottleneck_time_domestic = prior_dict["bottleneck_time_domestic"],
         bottleneck_time_wild = prior_dict["bottleneck_time_wild"],

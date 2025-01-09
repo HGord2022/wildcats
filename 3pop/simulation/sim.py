@@ -290,6 +290,7 @@ class WildcatModel:
         )
 
         demography.add_population_split(time=div_time, derived=[domestic, wild], ancestral="mrca")
+        demography.sort_events()
         return demography
 
     def recapitate(self, decap_trees, demography, seed: int, demography_debugger=False):
@@ -359,7 +360,7 @@ def get_sampled_nodes(tree_seq):
     returns: namedtuple, where names are the population, and each tuple element is
     a numpy array of length 2 lists (the nodes from an individual)
     """
-    Nodes = namedtuple("Nodes", "domestic, scot, captive, eu, lyb")
+    Nodes = namedtuple("Nodes", "domestic, wild, captive")
     nodes = np.array([tree_seq.individual(i).nodes for i in pyslim.individuals_alive_at(tree_seq, 0)])
     pop = np.array([tree_seq.individual(i).population for i in pyslim.individuals_alive_at(tree_seq, 0)])
     node_tuple = Nodes(domestic=nodes[pop == 0], scot=nodes[pop == 1], captive=nodes[pop == 2])
