@@ -111,14 +111,19 @@ def summary_stats(ts):
     # scaled PCA
     standardizedData = StandardScaler().fit_transform(matrix_012.T)
 
-    pca = PCA(n_components=2)
+    pca = PCA(n_components=3)
 
     principalComponents = pca.fit_transform(X=standardizedData)
 
-    pca_df = pd.DataFrame(principalComponents, columns=['pc1', 'pc2'])
+    ob_pca = pd.read_pickle("./obs_pca_3pop")
+
+    mtx1, mtx2, disparity = procrustes(ob_pca, principalComponents)
+
+    pca_df = pd.DataFrame(mtx2, columns=['pc1', 'pc2', 'pc3'])
+    pca_df = pca_df.drop(columns=["pc3"])
 
     
-    pops = ["domestic"] * 6 + ["scot"] * 63 + ["captive"] * 22
+    pops = ["domestic"] * 6 + ["scot"] * 63 + ["captive"] * 21
     pca_df["pop"] = pops
 
     # PCA stats
