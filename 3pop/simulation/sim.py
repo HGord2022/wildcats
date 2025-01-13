@@ -116,24 +116,25 @@ class WildcatModel:
         seed=None
         ):
         """
-
         Args:
-            captive_time (int): Time captive population introduced (generations from present).
-            div_time (int): Sylvestris-Lybica divergence time (generations from present).
-            div_time_dom (int): Domestic-Lybica divergence time (generations from present).
-            div_time_scot (int): Scottish-European Sylvestris divergence time (generations from present)
-            mig_length_scot (int): Length of domestic to wild-living wildcat population migration (generations from present).
-            mig_rate_scot (float): Rate of migration domestic -> wild-living scottish.
-            mig_rate_captive (float): Rate of migration of scottish wildcats into captive wildcat population.
-            pop_size_captive (int): Captive population size.
-            pop_size_domestic_1 (int): Domestic population size (initially used in slim).
-            pop_size_scot_1 (int): Wild-living scottish wildcat population size (initially used in slim).
-            pop_size_eu_1 (int): European wildcat population size.
-            pop_size_eu_2 (int): European wildcat population size pre scottish divergence
-            pop_size_lyb_1 (int): African Wildcat population size
-            pop_size_lyb_2 (int): African Wildcat population size pre domestication.
-            n_samples (list, optional): Number of samples from each population (domestic, scot, captive, european, lybica). 
-            Defaults to [30, 30, 30, 30, 30].
+            bottleneck_strength_domestic: float
+            bottleneck_strength_wild: float
+            bottleneck_time_domestic: int
+            bottleneck_time_wild: int
+            captive_time: int
+            div_time: int
+            mig_length_post_split: int
+            mig_rate_post_split: float
+            mig_length_wild: int
+            mig_rate_wild: float
+            mig_rate_captive: float
+            pop_size_captive: int
+            pop_size_domestic_1: int
+            pop_size_domestic_2: int
+            pop_size_wild_1: int
+            pop_size_wild_2: int
+            n_samples (list, optional): Number of samples from each population (domestic, wild, captive). 
+            Defaults to [30, 30, 30].
             seed (int, optional): Random seed. Defaults to None.
         """
 
@@ -182,9 +183,6 @@ class WildcatModel:
 
         # apply minor allele count filter to match real genome data
         tree_seq = tree_seq.delete_sites(utils.mac_filter(tree_seq, count=3))
-
-        # apply thinning to match real genome data
-        #tree_seq = tree_seq.delete_sites(utils.thinning(tree_seq, window=2000))
 
         end = time.time()
         print(tree_seq.num_sites)

@@ -135,8 +135,6 @@ class WildcatModel:
         n_sites = tree_seq.num_sites
         tree_seq = tree_seq.delete_sites(random.sample(range(0,n_sites),math.floor(n_sites//3.86)))
         
-        # apply thinning to match real genome data
-        #tree_seq = tree_seq.delete_sites(utils.thinning(tree_seq, window=2000))
 
         end = time.time()
         print(tree_seq.num_sites)
