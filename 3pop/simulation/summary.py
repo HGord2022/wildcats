@@ -116,6 +116,8 @@ def summary_stats(ts):
     principalComponents = pca.fit_transform(X=standardizedData)
 
     ob_pca = pd.read_pickle("./obs_pca_3pop")
+    print(np.shape(ob_pca))
+    print(np.shape(principalComponents))
 
     mtx1, mtx2, disparity = procrustes(ob_pca, principalComponents)
 
