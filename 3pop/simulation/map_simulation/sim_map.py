@@ -7,16 +7,63 @@ import os
 from collections import namedtuple
 import logging
 import shlex
-import pandas as pd
-import random
 import re
-import pickle
 from tabulate import tabulate
 from priors import priors
-import scipy.stats
 import time
 import utils
+import pickle
 
+"""
+This script defines a simulation model for wildcat populations using the msprime, tskit, and pyslim libraries. 
+It includes a class `WildcatModel` that encapsulates the simulation logic and several helper functions.
+
+Classes:
+    WildcatModel: 
+        A class to simulate wildcat populations with various demographic events and parameters.
+    GenotypeData: 
+        A class to collate results from the simulation or real data for analysis with scikit-allel.
+
+Functions:
+    add_seed_suffix_to_file(filename, seed):
+        Adds a suffix with the random seed to a filename to avoid clashes.
+    tree_summary(tree_seq):
+        Prints a summary of a tree sequence including the number of trees, coalesced trees, tree heights, 
+        number of alive individuals, samples, populations, variants, and sequence length.
+    get_sampled_nodes(tree_seq):
+        Finds the sampled nodes from a simplified tree sequence and returns a namedtuple with the nodes 
+        for each population.
+
+Methods in WildcatModel:
+    __init__(self, seq_length, recombination_rate, mutation_rate, decap_trees_filename="decap.trees", add_seed_suffix=True):
+        Initializes the WildcatModel with the given parameters.
+    simulate(self, bottleneck_strength_domestic, bottleneck_strength_wild, bottleneck_time_domestic, bottleneck_time_wild, 
+             captive_time, div_time, mig_length_post_split, mig_rate_post_split, mig_length_wild, mig_rate_wild, 
+             mig_rate_captive, pop_size_captive, pop_size_domestic_1, pop_size_domestic_2, pop_size_wild_1, 
+             pop_size_wild_2, n_samples=[30, 30, 30], seed=None):
+        Runs the simulation with the specified parameters and returns the tree sequence and time taken.
+    slim_command(self, pop_size_domestic_1, pop_size_wild_1, pop_size_captive, mig_rate_captive, mig_length_wild, 
+                 mig_rate_wild, captive_time, seed, slim_script_filename='slim_model.slim', add_seed_suffix=True):
+        Constructs the command to run the SLiM simulation with the given parameters.
+    run_slim(self, command):
+        Runs the SLiM simulation from the command line and returns the decapitated tree sequence.
+    get_demography(pop_size_domestic_1, pop_size_wild_1, pop_size_captive, pop_size_domestic_2, pop_size_wild_2, 
+                   div_time, mig_rate_post_split, mig_length_post_split, bottleneck_time_wild, bottleneck_strength_wild, 
+                   bottleneck_time_domestic, bottleneck_strength_domestic):
+        Defines the demography model for recapitation, including bottlenecks, population size changes, and migration.
+    recapitate(self, decap_trees, demography, seed, demography_debugger=False):
+        Recapitates the tree sequence under the specified demography model, adds mutations, and returns the tree sequence.
+    sample_nodes(self, tree_seq, sample_sizes, seed, concatenate=True):
+        Samples nodes of individuals from the extant populations for simplification.
+
+Methods in GenotypeData:
+    __init__(self, tree_seq=None, callset=None, subpops=None, seq_length=None):
+        Initializes the GenotypeData object with either a tree sequence or a callset.
+    _initialize_from_tree_seq(self, tree_seq):
+        Initializes the GenotypeData object from a tree sequence.
+    _initialize_from_callset(self, callset):
+        Initializes the GenotypeData object from a callset.
+"""
 
 class WildcatModel:
 
@@ -28,7 +75,9 @@ class WildcatModel:
         decap_trees_filename: str = "decap.trees",
         add_seed_suffix: bool = True,
         ):
-        """Wildcat model object. Recommended that the directory "../output/" is set up so
+        """
+        
+        Wildcat model object. Recommended that the directory "../output/" is set up so
         the default output paths work.
 
         Args:
@@ -48,55 +97,60 @@ class WildcatModel:
 
     def simulate(
         self,
+        bottleneck_strength_domestic: float,
+        bottleneck_strength_wild: float,
+        bottleneck_time_domestic: int,
+        bottleneck_time_wild: int,
         captive_time: int,
         div_time: int,
-        div_time_dom: int,
-        div_time_scot: int,
-        mig_length_scot: int,
-        mig_rate_scot: float,
+        mig_length_post_split: int,
+        mig_rate_post_split: float,
+        mig_length_wild: int,
+        mig_rate_wild: float,
         mig_rate_captive: float,
         pop_size_captive: int,
         pop_size_domestic_1: int,
-        pop_size_scot_1: int,
-        pop_size_eu_1: int,
-        pop_size_lyb_1: int,
-        pop_size_eu_2: int,
-        pop_size_lyb_2: int,
-        n_samples=[30, 30, 30, 30, 30],
+        pop_size_domestic_2: int,
+        pop_size_wild_1: int,
+        pop_size_wild_2: int,
+        n_samples=[30, 30, 30],
         seed=None
         ):
         """
-
         Args:
-            captive_time (int): Time captive population introduced (generations from present).
-            div_time1 (int): Sylvestris-Lybica divergence time (generations from present).
-            mig_length_post_split (int): Generations of symetric migration after Sylvestic-Lybica divergence.
-            mig_rate_post_split (float): Strength of symetric migration after Sylvestic-Lybica divergence.
-            mig_length_wild (int): Length of domestic to wild-living wildcat population migration (generations from present).
-            mig_rate_wild (float): Rate of migration domestic -> wild-living.
-            mig_rate_captive (float): Rate of migration of wildcats into captive wildcat population.
-            pop_size_captive (int): Captive population size.
-            pop_size_domestic_1 (int): Domestic population size (initially used in slim).
-            pop_size_domestic_2 (int): Domestic population size pre-bottleneck.
-            pop_size_wild_1 (int): Wild-living wildcat population size (initially used in slim).
-            pop_size_wild_2 (int): Wild-living wildcat size pre-bottleneck.
-            n_samples (list, optional): Number of samples from each population (domestic, wildcat, captive). Defaults to [5, 30, 10].
+            bottleneck_strength_domestic: float
+            bottleneck_strength_wild: float
+            bottleneck_time_domestic: int
+            bottleneck_time_wild: int
+            captive_time: int
+            div_time: int
+            mig_length_post_split: int
+            mig_rate_post_split: float
+            mig_length_wild: int
+            mig_rate_wild: float
+            mig_rate_captive: float
+            pop_size_captive: int
+            pop_size_domestic_1: int
+            pop_size_domestic_2: int
+            pop_size_wild_1: int
+            pop_size_wild_2: int
+            n_samples (list, optional): Number of samples from each population (domestic, wild, captive). 
+            Defaults to [30, 30, 30].
             seed (int, optional): Random seed. Defaults to None.
         """
 
         np.random.seed(seed)
 
+        start = time.time() 
 
         # Run simulation
         command = self.slim_command(
             pop_size_domestic_1=int(pop_size_domestic_1),
-            pop_size_scot_1=int(pop_size_scot_1),
-            pop_size_eu_1=int(pop_size_eu_1),
-            pop_size_lyb_1=int(pop_size_lyb_1),
+            pop_size_wild_1=int(pop_size_wild_1),
             pop_size_captive=int(pop_size_captive),
             mig_rate_captive=mig_rate_captive,
-            mig_length_scot=int(mig_length_scot),
-            mig_rate_scot=mig_rate_scot,
+            mig_length_wild=int(mig_length_wild),
+            mig_rate_wild=mig_rate_wild,
             captive_time=int(captive_time),
             seed=seed
         )
@@ -106,15 +160,17 @@ class WildcatModel:
 
         demography = self.get_demography(
             pop_size_domestic_1=int(pop_size_domestic_1),
-            pop_size_scot_1=int(pop_size_scot_1),
-            pop_size_eu_1=int(pop_size_eu_1),
-            pop_size_lyb_1=int(pop_size_lyb_1),
+            pop_size_wild_1=int(pop_size_wild_1),
             pop_size_captive=int(pop_size_captive),
-            pop_size_lyb_2=int(pop_size_lyb_2),
-            pop_size_eu_2=int(pop_size_eu_2),
+            pop_size_domestic_2=int(pop_size_domestic_2),
+            pop_size_wild_2=int(pop_size_wild_2),
             div_time=int(div_time),
-            div_time_dom=int(div_time_dom),
-            div_time_scot=int(div_time_scot),
+            mig_rate_post_split=mig_rate_post_split,
+            mig_length_post_split=int(mig_length_post_split),
+            bottleneck_time_wild=int(bottleneck_time_wild),
+            bottleneck_strength_wild=bottleneck_strength_wild,
+            bottleneck_time_domestic=int(bottleneck_time_domestic),
+            bottleneck_strength_domestic=bottleneck_strength_domestic
         )
 
         tree_seq = self.recapitate(tree_seq, demography, seed)
@@ -129,26 +185,25 @@ class WildcatModel:
         # apply minor allele count filter to match real genome data
         tree_seq = tree_seq.delete_sites(utils.mac_filter(tree_seq, count=3))
 
-        # apply thinning to match real genome data
-        #tree_seq = tree_seq.delete_sites(utils.thinning(tree_seq, window=2000))
-
-        filename_map = "./map_tree.pickle"
+        filename_map = "./simulated_tree.pickle"
 
         with open(filename_map, 'wb') as handle:
             pickle.dump(tree_seq, handle, protocol=pickle.DEFAULT_PROTOCOL)
 
-        return tree_seq
+        end = time.time()
+        print(tree_seq.num_sites)
+        time_taken = end - start
+
+        return tree_seq, time_taken
 
     def slim_command(
         self,
         pop_size_domestic_1,
-        pop_size_lyb_1,
-        pop_size_eu_1,
-        pop_size_scot_1,
+        pop_size_wild_1,
         pop_size_captive,
         mig_rate_captive,
-        mig_length_scot,
-        mig_rate_scot,
+        mig_length_wild,
+        mig_rate_wild,
         captive_time,
         seed,
         slim_script_filename='slim_model.slim',
@@ -157,13 +212,11 @@ class WildcatModel:
 
         param_dict = {
             "pop_size_domestic_1": pop_size_domestic_1,
-            "pop_size_eu_1": pop_size_eu_1,
-            "pop_size_scot_1": pop_size_scot_1,
-            "pop_size_lyb_1": pop_size_lyb_1,
+            "pop_size_wild_1": pop_size_wild_1,
             "pop_size_captive": pop_size_captive,
             "mig_rate_captive": mig_rate_captive,
-            "mig_length_scot": mig_length_scot,
-            "mig_rate_scot": mig_rate_scot,
+            "mig_length_wild": mig_length_wild,
+            "mig_rate_wild": mig_rate_wild,
             "captive_time": captive_time,
             "length": self.seq_length,
             "recombination_rate": self.recombination_rate
@@ -204,34 +257,44 @@ class WildcatModel:
 
     @staticmethod
     def get_demography(
-        pop_size_domestic_1, pop_size_eu_1, pop_size_lyb_1, pop_size_scot_1, pop_size_captive, pop_size_eu_2,
-        pop_size_lyb_2, div_time, div_time_scot, div_time_dom):
+        pop_size_domestic_1, pop_size_wild_1, pop_size_captive, pop_size_domestic_2, pop_size_wild_2,
+        div_time, mig_rate_post_split, mig_length_post_split, bottleneck_time_wild,
+        bottleneck_strength_wild, bottleneck_time_domestic, bottleneck_strength_domestic):
         """Model for recapitation, including bottlenecks, population size changes and migration.
         Returns list of demographic events sorted in time order. Note that if parameters are drawn from priors this
         could have unexpected consequences on the demography. sim.utils.check_params() should mitigate this issue."""
 
+        migration_time_2 = div_time-mig_length_post_split
 
-        domestic, scot, captive, eu, lyb = "p0", "p1", "p2", "p3", "p4"  # Names match slim for recapitation
+        domestic, wild, captive = "p0", "p1", "p2"  # Names match slim for recapitation
 
-        ## THESE MUST BE ADDED IN ORDER AS THEY ARE IN THE ABOVE LIST
         demography = msprime.Demography()
         demography.add_population(name=domestic, initial_size=pop_size_domestic_1)
-        demography.add_population(name=scot, initial_size=pop_size_scot_1)
+        demography.add_population(name=wild, initial_size=pop_size_wild_1)
         demography.add_population(name=captive, initial_size=pop_size_captive, initially_active=False)
-        demography.add_population(name=eu, initial_size=pop_size_eu_1)
-        demography.add_population(name=lyb, initial_size=pop_size_lyb_1)
-        demography.add_population(name="lyb2", initial_size=pop_size_lyb_2, initially_active=False)
-        demography.add_population(name="eu2", initial_size=pop_size_eu_2, initially_active=False)
-        demography.add_population(name="mrca", initial_size=pop_size_eu_2, initially_active=False)
+        demography.add_population(name="mrca", initial_size=pop_size_domestic_2+pop_size_wild_2, initially_active=False)
 
-        demography.add_population_split(time=div_time_dom, derived=[domestic, lyb], ancestral="lyb2")
+        demography.add_population_parameters_change(
+            time=bottleneck_time_domestic, initial_size=pop_size_domestic_2, population=domestic
+        )
+        demography.add_instantaneous_bottleneck(
+            time=bottleneck_time_domestic, strength=bottleneck_strength_domestic, population=domestic
+        )
 
-        demography.add_population_split(time=div_time_scot, derived=[eu, scot], ancestral="eu2")
+        demography.add_population_parameters_change(
+            time=bottleneck_time_wild, initial_size=pop_size_wild_2, population=wild
+        )
 
-        demography.add_population_split(time=div_time, derived=["lyb2", "eu2"], ancestral="mrca")
+        demography.add_instantaneous_bottleneck(
+            time=bottleneck_time_wild, strength=bottleneck_strength_wild, population=wild
+        )
 
+        demography.add_symmetric_migration_rate_change(
+            time=migration_time_2, populations=[domestic, wild], rate=mig_rate_post_split
+        )
+
+        demography.add_population_split(time=div_time, derived=[domestic, wild], ancestral="mrca")
         demography.sort_events()
-
         return demography
 
     def recapitate(self, decap_trees, demography, seed: int, demography_debugger=False):
@@ -282,7 +345,7 @@ class WildcatModel:
         pop = np.array([tree_seq.individual(i).population for i in pyslim.individuals_alive_at(tree_seq, 0)])
         np.random.seed(seed)
         samples = []
-        for pop_num in range(5):
+        for pop_num in range(3):
             sampled_inds = np.random.choice(
                 np.where(pop == pop_num)[0], replace=False, size=sample_sizes[pop_num]
                 )
@@ -301,10 +364,10 @@ def get_sampled_nodes(tree_seq):
     returns: namedtuple, where names are the population, and each tuple element is
     a numpy array of length 2 lists (the nodes from an individual)
     """
-    Nodes = namedtuple("Nodes", "domestic, scot, captive, eu, lyb")
+    Nodes = namedtuple("Nodes", "domestic, wild, captive")
     nodes = np.array([tree_seq.individual(i).nodes for i in pyslim.individuals_alive_at(tree_seq, 0)])
     pop = np.array([tree_seq.individual(i).population for i in pyslim.individuals_alive_at(tree_seq, 0)])
-    node_tuple = Nodes(domestic=nodes[pop == 0], scot=nodes[pop == 1], captive=nodes[pop == 2], eu=nodes[pop == 3], lyb=nodes[pop == 4])
+    node_tuple = Nodes(domestic=nodes[pop == 0], scot=nodes[pop == 1], captive=nodes[pop == 2])
 
     return node_tuple
 
