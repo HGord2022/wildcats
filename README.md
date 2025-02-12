@@ -15,3 +15,9 @@ After filtering missingness, kept 847649 out of a possible 847649 Sites (0% miss
 After filtering multiallelic sites, kept 1263594 out of a possible 1329108 Sites
 After filtering minor allele count 3, kept 806873 out of a possible 1263594 Sites
 After filtering missingness, kept x out of a possible 806873 Sites
+
+To do list:
+- add priors for mu and recomb
+- relax priors
+- run summ stats trimming algorithm
+- 
