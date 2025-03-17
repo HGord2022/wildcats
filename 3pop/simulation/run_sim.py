@@ -27,6 +27,8 @@ array_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
 
 print(prior_dict)
 
+# point values => recombination_rate=1.8e-8, mutation_rate= 0.86e-8
+
 model = WildcatModel(seq_length=int(44648254), recombination_rate=prior_dict["recombination_rate"], mutation_rate=prior_dict["mutation_rate"])
 
 data, time =  model.simulate(
