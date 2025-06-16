@@ -3,8 +3,31 @@
 import numpy as np
 import scipy.stats
 
-### 07/03/2025
+### 02/06/2025
 priors = {
+    "bottleneck_strength_domestic": scipy.stats.lognorm(s=0.9, loc=0, scale=25000),
+    "bottleneck_strength_wild": scipy.stats.lognorm(s=1, loc=0, scale=9000),
+    "bottleneck_time_domestic": scipy.stats.lognorm(s=0.3, loc=0, scale=3500),
+    "bottleneck_time_wild": scipy.stats.lognorm(s=0.3, loc=0, scale=3500),
+    "captive_time": scipy.stats.lognorm(s=0.5, loc=0, scale=np.exp(3)),
+    "div_time": scipy.stats.lognorm(s=0.4, loc=10000, scale=50000),
+    "mig_length_post_split": scipy.stats.lognorm(s=1.5, loc=0, scale=10000),
+    "mig_length_wild": scipy.stats.lognorm(s=0.4, loc=1, scale=np.exp(2.5)),
+    "mig_rate_captive": scipy.stats.lognorm(s=0.5, loc=0, scale=0.11),
+    "mig_rate_post_split": scipy.stats.lognorm(s=1.1, loc=0, scale=0.04),
+    "mig_rate_wild": scipy.stats.lognorm(s=0.5, loc=0, scale=0.08),
+    "pop_size_wild_1": scipy.stats.lognorm(s=0.6, loc=30, scale=np.exp(8.7)),
+    "pop_size_wild_2": scipy.stats.lognorm(s=0.4, loc=30, scale=np.exp(9.1)),
+    "pop_size_captive": scipy.stats.lognorm(s=0.6, loc=0, scale=120),
+    "pop_size_domestic_1": scipy.stats.lognorm(s=0.45, loc=0, scale=np.exp(9.1)),
+    "pop_size_domestic_2": scipy.stats.lognorm(s=0.5, loc=5, scale=np.exp(9.4))
+}
+
+
+
+
+### 07/03/2025
+priors3 = {
     "bottleneck_strength_domestic": scipy.stats.lognorm(s=1.2, loc=0, scale=15000),
     "bottleneck_strength_wild": scipy.stats.lognorm(s=1.2, loc=0, scale=10000),
     "bottleneck_time_domestic": scipy.stats.lognorm(s=0.2, loc=800, scale=2500),
