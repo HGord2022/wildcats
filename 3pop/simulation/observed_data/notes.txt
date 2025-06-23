@@ -1,0 +1,5 @@
+bcftools view \
+  --samples-file exclude.txt --exclude-samples \
+  --min-alleles 2 --max-alleles 2 \
+  -i 'MAC>2 && N_MISSING=0' \
+  input.vcf.gz -Oz -o filtered.vcf.gz
