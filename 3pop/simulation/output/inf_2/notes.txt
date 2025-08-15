@@ -1,0 +1,4 @@
+This uses r1 data from dummy_inf_2
+
+stats dropped:
+
