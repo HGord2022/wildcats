@@ -10,7 +10,8 @@ from statistics import mean
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from scipy.stats import iqr
-from scipy.spatial import procrustes
+
+import itertools
 
 def summary_stats(ts):
     """
@@ -19,12 +20,11 @@ def summary_stats(ts):
 
     Arguments
     ---------
-    data: Named tuple of results (made by collate_results function)
+    ts: tskit.TreeSequence
 
     Returns
     ---------
     Nested dictionary of statistics
-
     """
     pop_dict = {"domestic":0, "scot":1, "captive":2, "eu":3, "lyb":4}
 
@@ -54,56 +54,41 @@ def summary_stats(ts):
         stats["segregating_sites"][pop_name] = ts.segregating_sites(sample_sets=ts.samples(population=pop_num))
         stats["tajimas_d"][pop_name] = ts.Tajimas_D(sample_sets=ts.samples(population=pop_num))
 
-    # Two way statistics
-    for comparison in ["domestic_scot", "domestic_captive", "domestic_eu", "domestic_lyb",
-                       "scot_captive", "scot_eu", "scot_lyb", "captive_eu", "captive_lyb", "eu_lyb"]:
-        p = comparison.split("_")
-        stats["divergence"][comparison] = ts.divergence(sample_sets = [ts.samples(population=pop_dict[p[0]]),
-                                                                       ts.samples(population=pop_dict[p[1]])])
-        stats["relatedness"][comparison] = ts.genetic_relatedness(sample_sets=[ts.samples(population=pop_dict[p[0]]),
-                                                                               ts.samples(population=pop_dict[p[1]])])
-        stats["fst"][comparison] = ts.Fst(sample_sets=[ts.samples(population=pop_dict[p[0]]),
-                                                       ts.samples(population=pop_dict[p[1]])])
-        stats["f2"][comparison] = ts.f2(sample_sets=[ts.samples(population=pop_dict[p[0]]),
-                                                     ts.samples(population=pop_dict[p[1]])])
-        stats["y2"][comparison] = ts.Y2(sample_sets=[ts.samples(population=pop_dict[p[0]]),
-                                                     ts.samples(population=pop_dict[p[1]])])
+    # Two-way statistics (symmetric, so only compute once per unordered pair)
+    for a, b in itertools.combinations(pop_dict.keys(), 2):
+        key = f"{a}_{b}"
+        stats["divergence"][key] = ts.divergence(sample_sets=[ts.samples(population=pop_dict[a]),
+                                                              ts.samples(population=pop_dict[b])])
+        stats["relatedness"][key] = ts.genetic_relatedness(sample_sets=[ts.samples(population=pop_dict[a]),
+                                                                        ts.samples(population=pop_dict[b])])
+        stats["fst"][key] = ts.Fst(sample_sets=[ts.samples(population=pop_dict[a]),
+                                                ts.samples(population=pop_dict[b])])
+        stats["f2"][key] = ts.f2(sample_sets=[ts.samples(population=pop_dict[a]),
+                                              ts.samples(population=pop_dict[b])])
+        stats["y2"][key] = ts.Y2(sample_sets=[ts.samples(population=pop_dict[a]),
+                                              ts.samples(population=pop_dict[b])])
 
-    # Three way statistics
-    for comparison in ["domestic_scot_captive", "domestic_scot_eu", "domestic_scot_lyb", "domestic_captive_eu",
-                       "domestic_captive_lyb", "domestic_eu_lyb", "scot_captive_eu", "scot_captive_lyb", "scot_eu_lyb",
-                       "captive_eu_lyb"]:
-        p = comparison.split("_")
-        stats["f3"][comparison] = ts.f3(sample_sets = [ts.samples(population=pop_dict[p[0]]),
-                                                       ts.samples(population=pop_dict[p[1]]),
-                                                       ts.samples(population=pop_dict[p[2]])])
-        stats["y3"][comparison] = ts.Y3(sample_sets = [ts.samples(population=pop_dict[p[0]]),
-                                                       ts.samples(population=pop_dict[p[1]]),
-                                                       ts.samples(population=pop_dict[p[2]])])
-    # Four way statistics
-    for comparison in ["domestic_scot_captive_eu", "domestic_scot_captive_lyb","domestic_captive_eu_lyb",
-                       "domestic_scot_eu_lyb", "scot_captive_eu_lyb"]:
-        p = comparison.split("_")
-        stats["f4"][comparison] = ts.f4(sample_sets=[ts.samples(population=pop_dict[p[0]]),
-                                                     ts.samples(population=pop_dict[p[1]]),
-                                                     ts.samples(population=pop_dict[p[2]]),
-                                                     ts.samples(population=pop_dict[p[3]])])
+    # Three-way statistics (f3: first is special, last two are symmetric)
+    for a in pop_dict.keys():
+        for b, c in itertools.combinations([x for x in pop_dict.keys() if x != a], 2):
+            key = f"{a}_{b}_{c}"
+            stats["f3"][key] = ts.f3(sample_sets=[ts.samples(population=pop_dict[a]),
+                                                  ts.samples(population=pop_dict[b]),
+                                                  ts.samples(population=pop_dict[c])])
+            stats["y3"][key] = ts.Y3(sample_sets=[ts.samples(population=pop_dict[a]),
+                                                  ts.samples(population=pop_dict[b]),
+                                                  ts.samples(population=pop_dict[c])])
+
+    # Four-way statistics (f4: treat sign-flipped stats as identical, so only use unordered pairs of pairs)
+    for (a, b), (c, d) in itertools.combinations(itertools.combinations(pop_dict.keys(), 2), 2):
+        key = f"{a}_{b}_{c}_{d}"
+        stats["f4"][key] = ts.f4(sample_sets=[ts.samples(population=pop_dict[a]),
+                                              ts.samples(population=pop_dict[b]),
+                                              ts.samples(population=pop_dict[c]),
+                                              ts.samples(population=pop_dict[d])])
 
     ##### PCA summary stats #####
     genotype = ts.genotype_matrix()
-
-    # minor allele frequency filter NOT NEEDED
-    '''
-    frequency = np.count_nonzero(genotype == 1, axis=1) / np.shape(genotype)[1]
-
-    maf = np.zeros(np.shape(frequency)[0])
-
-    for num in range(0, np.shape(frequency)[0]):
-        maf[num] = np.any([frequency[num] < 0.05, frequency[num] > 0.95])
-
-    maf = maf.astype(dtype=bool)
-    filtered_01 = genotype[~maf]
-    '''
 
     # convert from 01 to 012
     samples = np.shape(genotype)[1]
@@ -121,17 +106,10 @@ def summary_stats(ts):
     # scaled PCA
     standardizedData = StandardScaler().fit_transform(matrix_012.T)
 
-    pca = PCA(n_components=3)
-
+    pca = PCA(n_components=2)
     principalComponents = pca.fit_transform(X=standardizedData)
 
-    ob_pca = pd.read_pickle("./obs_pca")
-
-    mtx1, mtx2, disparity = procrustes(ob_pca, principalComponents)
-
-    pca_df = pd.DataFrame(mtx2, columns=['pc1', 'pc2', 'pc3'])
-    pca_df = pca_df.drop(columns=["pc3"])
-
+    pca_df = pd.DataFrame(principalComponents, columns=['pc1', 'pc2'])
 
     pops = ["domestic"] * 6 + ["scot"] * 63 + ["captive"] * 22 + ["eu"] * 15 + ["lyb"] * 4
     pca_df["pop"] = pops
